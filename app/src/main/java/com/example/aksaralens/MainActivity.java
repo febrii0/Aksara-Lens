@@ -19,20 +19,26 @@ import android.widget.TextView;
 
 
 import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.support.image.TensorImage;
+import org.tensorflow.lite.support.label.Category;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import com.example.aksaralens.ml.Model;
+import com.example.aksaralens.ml.Modelx;
 
 public class MainActivity extends AppCompatActivity {
 
     Button camera, gallery;
     ImageView imageView;
     TextView result;
-    int imageSize = 32;
+    int imageSize = 224;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void classifyImage(Bitmap image){
-        try {
+        /*try {
             Model model = Model.newInstance(getApplicationContext());
 
             // Creates inputs for reference.
@@ -105,6 +111,32 @@ public class MainActivity extends AppCompatActivity {
             }
             String[] classes = {"KA", "GA", "NGA"};
             result.setText(classes[maxPos]);
+
+            // Releases model resources if no longer used.
+            model.close();
+        } catch (IOException e) {
+            // TODO Handle the exception
+        }*/
+
+        try {
+            Modelx model = Modelx.newInstance(getApplicationContext());
+
+            //Bitmap resized = Bitmap.createScaledBitmap(image, 224, 224, true);
+
+            TensorImage tensorImage = TensorImage.fromBitmap(image);
+
+            Modelx.Outputs outputs = model.process(tensorImage);
+            List<Category> probability = outputs.getProbabilityAsCategoryList();
+
+            if (probability.size() > 0) {
+                Category category = probability.stream().max(Comparator.comparing(Category::getScore)).get();
+
+                for (int i = 0; i < probability.size(); i++) {
+                    Log.i("Probability", probability.get(i).getLabel() + " : " + probability.get(i).getScore());
+                }
+
+                result.setText(category.getLabel());
+            }
 
             // Releases model resources if no longer used.
             model.close();
